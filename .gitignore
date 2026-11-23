@@ -1,0 +1,42 @@
+# === Secrets & Environment ===
+.env
+
+# === Vector Store & Databases ===
+chroma_db/
+*.sqlite
+*.db
+
+# === Python Cache ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# === Testing & Coverage ===
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+eval/last_report.json
+
+# === Build & Distribution ===
+*.egg-info/
+dist/
+build/
+*.egg
+
+# === Virtual Environments ===
+.venv/
+venv/
+env/
+ENV/
+
+# === IDE & OS ===
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
+
+# === Model Weights Cache (large files) ===
+.cache/

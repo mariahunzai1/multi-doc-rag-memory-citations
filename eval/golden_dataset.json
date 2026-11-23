@@ -1,0 +1,82 @@
+[
+  {
+    "id": "eval-01",
+    "category": "pdf_rule",
+    "question": "What encryption standard is required for data at rest?",
+    "expected_source": "company_security_policy.pdf",
+    "expected_keywords": ["AES-256", "encryption at rest"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-02",
+    "category": "pdf_sla",
+    "question": "What is the containment window for Severity 1 security incidents?",
+    "expected_source": "company_security_policy.pdf",
+    "expected_keywords": ["4 hours", "containment"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-03",
+    "category": "pdf_audit",
+    "question": "How long must audit logs be retained securely?",
+    "expected_source": "company_security_policy.pdf",
+    "expected_keywords": ["365 days", "audit logs"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-04",
+    "category": "docx_table",
+    "question": "What is the target p95 latency budget for the RAG engine?",
+    "expected_source": "product_specs.docx",
+    "expected_keywords": ["800 ms", "p95"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-05",
+    "category": "docx_spec",
+    "question": "What document formats are supported by the engine?",
+    "expected_source": "product_specs.docx",
+    "expected_keywords": ["PDF", "DOCX", "XLSX", "TXT"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-06",
+    "category": "xlsx_plans",
+    "question": "How much does the Pro plan cost per month and what is the monthly quota?",
+    "expected_source": "q3_pricing_tiers.xlsx",
+    "expected_keywords": ["$49", "500,000"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-07",
+    "category": "xlsx_addons",
+    "question": "What is the monthly cost of the custom embeddings add-on?",
+    "expected_source": "q3_pricing_tiers.xlsx",
+    "expected_keywords": ["$50/mo", "Custom Embeddings"],
+    "expected_abstain": false
+  },
+  {
+    "id": "eval-08",
+    "category": "distractor",
+    "question": "What was the final score of the 1998 World Cup soccer final?",
+    "expected_source": null,
+    "expected_keywords": [],
+    "expected_abstain": true
+  },
+  {
+    "id": "eval-09",
+    "category": "distractor",
+    "question": "How do I bake a chocolate lava cake with molten fudge?",
+    "expected_source": null,
+    "expected_keywords": [],
+    "expected_abstain": true
+  },
+  {
+    "id": "eval-10",
+    "category": "distractor",
+    "question": "Who was awarded the Nobel Prize in Physics in 1921?",
+    "expected_source": null,
+    "expected_keywords": [],
+    "expected_abstain": true
+  }
+]
