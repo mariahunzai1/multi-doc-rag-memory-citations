@@ -98,6 +98,7 @@ def tmp_settings(tmp_path: Path) -> Settings:
         bm25_index_path=str(tmp_path / "chroma_db" / "bm25_corpus.json"),
         sqlite_db_path=str(tmp_path / "rag_memory.sqlite"),
         rerank_threshold=-1.5,
+        auto_seed_samples=False,
     )
 
 

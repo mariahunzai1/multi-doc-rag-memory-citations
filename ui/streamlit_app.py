@@ -18,8 +18,11 @@ Run with:
 from __future__ import annotations
 
 import os
+import threading
+import time
 import uuid
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 import streamlit as st
@@ -35,6 +38,62 @@ st.set_page_config(
     page_icon="🤖",
     layout="wide",
 )
+
+
+# ===========================================================================
+# Self-Contained Cloud Launcher (auto-start backend on localhost)
+# ===========================================================================
+
+
+@st.cache_resource
+def _ensure_backend() -> None:
+    """
+    Auto-launch uvicorn in a daemon thread if BACKEND_URL points to localhost
+    and GET /health is unreachable.
+
+    Runs in-process via threading.Thread (saves ~150 MB vs subprocess.Popen).
+    Polls /health for up to 45 seconds so the first-boot HuggingFace
+    embedding model download never triggers a premature timeout.
+    """
+    parsed = urlparse(BACKEND_URL)
+    hostname = parsed.hostname or ""
+    if hostname not in ("localhost", "127.0.0.1"):
+        return  # Remote backend — do not auto-launch
+
+    # Check if already running
+    try:
+        with httpx.Client(timeout=2.0) as client:
+            resp = client.get(f"{BACKEND_URL}/health")
+            if resp.status_code == 200:
+                return
+    except httpx.RequestError:
+        pass
+
+    # Start uvicorn in a daemon thread (in-process, no subprocess overhead)
+    port = parsed.port or 8000
+
+    def _run_server() -> None:
+        import uvicorn
+
+        uvicorn.run("api.main:app", host="127.0.0.1", port=port, log_level="info")
+
+    thread = threading.Thread(target=_run_server, daemon=True, name="uvicorn-backend")
+    thread.start()
+
+    # Poll GET /health for up to 45 seconds (first boot downloads HF models)
+    deadline = time.time() + 45.0
+    while time.time() < deadline:
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                resp = client.get(f"{BACKEND_URL}/health")
+                if resp.status_code == 200:
+                    return
+        except httpx.RequestError:
+            pass
+        time.sleep(0.5)
+
+
+_ensure_backend()
 
 
 # ===========================================================================

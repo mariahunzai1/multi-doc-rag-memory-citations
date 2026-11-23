@@ -84,3 +84,8 @@ class Settings(BaseSettings):
     chroma_persist_dir: str = "./chroma_db"
     sqlite_db_path: str = "./rag_memory.sqlite"
     bm25_index_path: str = "./chroma_db/bm25_corpus.json"
+
+    # ------------------------------------------------------------------
+    # Cold-Start Sample Seeding (Streamlit Community Cloud)
+    # ------------------------------------------------------------------
+    auto_seed_samples: bool = True

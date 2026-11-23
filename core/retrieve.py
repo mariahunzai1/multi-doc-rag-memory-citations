@@ -138,7 +138,10 @@ def _dense_search(
     if not chroma_dir.exists():
         return []
 
-    client = chromadb.PersistentClient(path=str(chroma_dir))
+    client = chromadb.PersistentClient(
+        path=str(chroma_dir),
+        settings=chromadb.config.Settings(anonymized_telemetry=False),
+    )
     try:
         collection = client.get_collection(name=COLLECTION_NAME)
     except Exception:
@@ -261,7 +264,10 @@ def _bm25_search(
     if missing_content_ids:
         chroma_dir = Path(settings.chroma_persist_dir)
         if chroma_dir.exists():
-            client = chromadb.PersistentClient(path=str(chroma_dir))
+            client = chromadb.PersistentClient(
+        path=str(chroma_dir),
+        settings=chromadb.config.Settings(anonymized_telemetry=False),
+    )
             try:
                 coll = client.get_collection(name=COLLECTION_NAME)
                 fetched = coll.get(

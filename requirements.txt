@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 # ============================================================
 #  requirements.txt — 100% zero-cost ($0) local/open-source stack
 #  Python 3.11+   |   Pydantic v2   |   No paid API keys required
@@ -5,6 +6,7 @@
 # ============================================================
 
 # --- Core ML / Retrieval ---
+torch==2.5.1+cpu
 sentence-transformers==3.4.1
 chromadb==0.6.3
 rank-bm25==0.2.2

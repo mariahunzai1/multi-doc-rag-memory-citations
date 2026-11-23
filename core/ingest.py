@@ -447,7 +447,10 @@ def _persist_chunks(
 
     # ── 2. ChromaDB ────────────────────────────────────────────────────
     Path(settings.chroma_persist_dir).mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+    client = chromadb.PersistentClient(
+        path=settings.chroma_persist_dir,
+        settings=chromadb.config.Settings(anonymized_telemetry=False),
+    )
     collection = client.get_or_create_collection(
         name=_COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},
@@ -636,7 +639,10 @@ def clear_all_documents(settings: Settings) -> None:
     """
     # ── 1. ChromaDB collection ──────────────────────────────────────────
     Path(settings.chroma_persist_dir).mkdir(parents=True, exist_ok=True)
-    client = chromadb.PersistentClient(path=settings.chroma_persist_dir)
+    client = chromadb.PersistentClient(
+        path=settings.chroma_persist_dir,
+        settings=chromadb.config.Settings(anonymized_telemetry=False),
+    )
     try:
         client.delete_collection(_COLLECTION_NAME)
     except Exception:

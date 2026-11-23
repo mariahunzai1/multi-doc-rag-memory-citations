@@ -26,8 +26,13 @@ from __future__ import annotations
 import json
 import logging
 import time
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
+
+import chromadb
 
 from fastapi import Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
@@ -36,10 +41,12 @@ from langchain_core.runnables import Runnable
 from core.config import Settings
 from core.generate import build_llm, generate_answer
 from core.ingest import (
+    COLLECTION_NAME,
     BaseEmbedder,
     SentenceTransformerEmbedder,
     clear_all_documents,
     ingest_bytes,
+    ingest_file,
 )
 from core.memory import SQLiteMemoryStore
 from core.retrieve import BaseReranker, CrossEncoderReranker
@@ -53,6 +60,60 @@ logger = logging.getLogger("rag_engine_api")
 logging.basicConfig(level=logging.INFO)
 
 # ---------------------------------------------------------------------------
+# Lifespan — Cold-Start Sample Seeding
+# ---------------------------------------------------------------------------
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
+    """
+    Application lifespan: pre-populate settings and cold-start sample seed.
+
+    If auto_seed_samples is True, the ChromaDB collection is empty, and
+    sample_docs/ exists, automatically ingest sample files so public
+    visitors on Streamlit Community Cloud see a populated knowledge base
+    on first boot.  SHA-256 deduplication makes restarts a no-op.
+    """
+    # Respect DI overrides (tests set app.dependency_overrides[get_settings])
+    if get_settings in application.dependency_overrides:
+        settings = application.dependency_overrides[get_settings]()
+    else:
+        settings = Settings()
+    application.state.settings = settings
+
+    if settings.auto_seed_samples:
+        sample_dir = Path("sample_docs")
+        if sample_dir.exists():
+            try:
+                chroma_dir = Path(settings.chroma_persist_dir)
+                chroma_dir.mkdir(parents=True, exist_ok=True)
+                client = chromadb.PersistentClient(
+                    path=settings.chroma_persist_dir,
+                    settings=chromadb.config.Settings(anonymized_telemetry=False),
+                )
+                collection = client.get_or_create_collection(
+                    name=COLLECTION_NAME,
+                    metadata={"hnsw:space": "cosine"},
+                )
+                if collection.count() == 0:
+                    embedder = SentenceTransformerEmbedder(settings.embedding_model)
+                    application.state.embedder = embedder
+                    for ext in ("*.pdf", "*.docx", "*.xlsx"):
+                        for filepath in sorted(sample_dir.glob(ext)):
+                            result = ingest_file(filepath, settings, embedder)
+                            logger.info(
+                                "Auto-seeded %s → %s (%d chunks)",
+                                result.filename,
+                                result.status,
+                                result.chunks_added,
+                            )
+            except Exception as exc:
+                logger.warning("Cold-start sample seeding skipped: %s", exc)
+
+    yield
+
+
+# ---------------------------------------------------------------------------
 # FastAPI Application
 # ---------------------------------------------------------------------------
 
@@ -60,6 +121,7 @@ app = FastAPI(
     title="Production Conversational RAG Engine",
     description="100% zero-cost local/open-source RAG engine with hybrid retrieval and verifiable citations.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 

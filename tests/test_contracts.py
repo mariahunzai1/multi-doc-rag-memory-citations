@@ -139,6 +139,11 @@ class TestConfigDefaults:
         s = Settings()
         assert s.bm25_index_path == "./chroma_db/bm25_corpus.json"
 
+    def test_default_auto_seed_samples(self) -> None:
+        """Auto-seeding is enabled by default for Streamlit Community Cloud."""
+        s = Settings()
+        assert s.auto_seed_samples is True
+
 
 class TestConfigEnvOverride:
     """.env / environment variable overrides propagate correctly."""
