@@ -72,12 +72,15 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     If auto_seed_samples is True, the ChromaDB collection is empty, and
     sample_docs/ exists, automatically ingest sample files so public
     visitors on Streamlit Community Cloud see a populated knowledge base
-    on first boot.  SHA-256 deduplication makes restarts a no-op.
+    on first boot. SHA-256 deduplication makes restarts a no-op.
     """
     # Respect DI overrides (tests set app.dependency_overrides[get_settings])
-    if get_settings in application.dependency_overrides:
-        settings = application.dependency_overrides[get_settings]()
-    else:
+    try:
+        if get_settings in application.dependency_overrides:
+            settings = application.dependency_overrides[get_settings]()
+        else:
+            settings = Settings()
+    except Exception:
         settings = Settings()
     application.state.settings = settings
 

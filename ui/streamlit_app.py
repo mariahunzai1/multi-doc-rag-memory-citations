@@ -18,11 +18,19 @@ Run with:
 from __future__ import annotations
 
 import os
+import sys
 import threading
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+
+# Ensure the repository root is on sys.path so `uvicorn.run("api.main:app")`
+# resolves `api` regardless of the working directory (critical on Streamlit Cloud).
+_REPO_ROOT = str(Path(__file__).resolve().parent.parent)
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 import httpx
 import streamlit as st
@@ -52,7 +60,7 @@ def _ensure_backend() -> None:
     and GET /health is unreachable.
 
     Runs in-process via threading.Thread (saves ~150 MB vs subprocess.Popen).
-    Polls /health for up to 45 seconds so the first-boot HuggingFace
+    Polls /health for up to 60 seconds so the first-boot HuggingFace
     embedding model download never triggers a premature timeout.
     """
     parsed = urlparse(BACKEND_URL)
@@ -69,6 +77,17 @@ def _ensure_backend() -> None:
     except httpx.RequestError:
         pass
 
+    # Sync Streamlit Cloud Secrets into os.environ so pydantic-settings in
+    # api.main reads them.  Wrapped in try/except for local runs without
+    # a secrets.toml file.
+    _SECRET_KEYS = ("LLM_BASE_URL", "LLM_API_KEY", "LLM_MODEL")
+    try:
+        for key in _SECRET_KEYS:
+            if key in st.secrets and isinstance(st.secrets[key], str):
+                os.environ.setdefault(key, st.secrets[key])
+    except Exception:
+        pass  # No secrets.toml — safe to ignore on local dev
+
     # Start uvicorn in a daemon thread (in-process, no subprocess overhead)
     port = parsed.port or 8000
 
@@ -80,8 +99,8 @@ def _ensure_backend() -> None:
     thread = threading.Thread(target=_run_server, daemon=True, name="uvicorn-backend")
     thread.start()
 
-    # Poll GET /health for up to 45 seconds (first boot downloads HF models)
-    deadline = time.time() + 45.0
+    # Poll GET /health for up to 60 seconds (first boot downloads HF models)
+    deadline = time.time() + 60.0
     while time.time() < deadline:
         try:
             with httpx.Client(timeout=2.0) as client:
@@ -93,7 +112,8 @@ def _ensure_backend() -> None:
         time.sleep(0.5)
 
 
-_ensure_backend()
+with st.spinner("Starting RAG backend and loading embedding models..."):
+    _ensure_backend()
 
 
 # ===========================================================================
